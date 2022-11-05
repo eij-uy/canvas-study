@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #myCanvas,
+    #himCanvas,
+    #imgCanvas {
+      margin-top: 20px;
+      border: 1px solid #000;
+      box-shadow: 0 0 1px 1px rgba(0, 0, 0, .2);
+      border-radius: 2px
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <input id="btn4" type="file"></input>
+  </div>
+  <div style="margin-top: 20px">
+    <button id="btn1">开始</button>
+    <button id="btn2">清空</button>
+    <button id="btn3">下载</button>
+    <button id="btn5">生成</button>
+  </div>
+  <canvas id="myCanvas"></canvas>
+  <canvas id="himCanvas"></canvas>
+  <canvas id="imgCanvas"></canvas>
+  <div class="video"></div>
+  <script>
+
+    const $ = (str) => {
+      return document.querySelector(str)
+    }
+
+    class Draw {
+      constructor(myEl, himEl, imgEl, width, height) {
+        this.myEl = myEl
+        this.myEl.width = width
+        this.myEl.height = height
+
+        this.himEl = himEl
+        this.himEl.width = width
+        this.himEl.height = height
+
+        this.imgEl = imgEl
+
+        this.width = width
+        this.height = height
+
+        this.myCanvas = myEl.getContext("2d")
+        this.himCanvas = himEl.getContext("2d")
+        this.imgCanvas = imgEl.getContext("2d")
+
+        this.timer = null
+        this.animateArr = []
+      }
+      init () {
+
+        this.myCanvas.shadowColor = '#000'
+        this.myCanvas.shadowBlur = 3
+        this.myCanvas.lineWidth = 0.5
+        this.myCanvas.lineJoin = 'round'
+        this.myCanvas.lineCap = 'round'
+
+        this.himCanvas.shadowColor = '#000'
+        this.himCanvas.shadowBlur = 3
+        this.himCanvas.lineWidth = 1
+        this.himCanvas.lineJoin = 'round'
+
+        let drawFlg = false
+        this.myEl.onmousedown = () => {
+          drawFlg = true
+          this.myCanvas.beginPath()
+        }
+        this.myEl.onmousemove = e => {
+          if (drawFlg) {
+            const x = e.pageX - this.myEl.offsetLeft
+            const y = e.pageY - this.myEl.offsetTop
+            // console.log(x, y)
+            this.animateArr.push([x, y])
+            this.myCanvas.lineTo(x, y)
+            this.myCanvas.stroke()
+          }
+        }
+        this.myEl.onmouseup = () => {
+          drawFlg = false
+          this.animateArr.push(-1)
+        }
+        this.myEl.onmouseout = () => {
+          this.myEl.onmouseup()
+        }
+      }
+      animateStart () {
+        let i = 0
+        this.himCanvas.beginPath()
+        const loop = (c, arr, i) => {
+          if (i < arr.length - 1) {
+            let animate = arr[i]
+            // console.log(animate)
+            if (animate instanceof Array) {
+              c.lineTo(animate[0], animate[1])
+              c.stroke()
+            } else {
+              c.beginPath()
+            }
+          } else {
+            clearInterval(this.timer)
+          }
+        }
+        this.timer = setInterval(() => {
+          loop(this.himCanvas, this.animateArr, i)
+          i++
+        }, 10)
+      }
+      clear () {
+        console.log(this.myCanvas)
+        this.myCanvas.clearRect(0, 0, this.width, this.height)
+        this.himCanvas.clearRect(0, 0, this.width, this.height)
+        this.animateArr = []
+      }
+
+      createImage (file) {
+        // console.log(file)
+        let href = URL.createObjectURL(file)
+        if (file.type.includes('video')) {
+          // console.log(href)
+          const video = document.createElement('video')
+          video.src = href
+          video.play()
+          this.imgEl.width = 400
+          this.imgEl.height = 900
+          this.imgCanvas.drawImage(video, 0, 0, 400, 900)
+          let timer = setInterval(() => {
+            console.log('检测')
+            if (video.paused) {
+              clearInterval(timer)
+            }
+            this.imgCanvas.drawImage(video, 0, 0, 400, 900)
+          }, 10)
+        } else {
+          const oImg = new Image()
+          oImg.src = href
+          oImg.onload = () => {
+            // console.log()
+            this.imgEl.width = oImg.width
+            this.imgEl.height = oImg.height
+            this.imgCanvas.drawImage(oImg, 0, 0, oImg.width, oImg.height)
+          }
+        }
+
+      }
+
+
+      downloadImage () {
+        // console.log(this.himEl)
+        let base64Content = this.himEl.toDataURL("image/png")
+        // console.log(base64Content)
+        const file = this.base64ToFile(base64Content)
+        const href = URL.createObjectURL(file)
+        // console.log(href)
+        // console.log(file)
+        const a = document.createElement("a")
+        a.download = file.name
+        a.href = href
+        a.click()
+      }
+      //base64格式转file
+      base64ToFile (base64) {
+        let arr = base64.split(',')
+        // console.log(arr)
+        const mime = arr[0].match(/:(.*?);/)[1]
+        // console.log(mime)
+        const bstr = atob(arr[1])
+        let n = bstr.length
+        // console.log(n)
+        let u8arr = new Uint8Array(n)
+        // console.log(u8arr)
+        while (n--) {
+          // console.log(n, 'n')
+          u8arr[n] = bstr.charCodeAt(n)
+        }
+
+        const file = new File([u8arr], "画", { type: mime })
+        return file
+      }
+    }
+
+    const canvasDraw = new Draw($('#myCanvas'), $('#himCanvas'), $('#imgCanvas'), 400, 200)
+    canvasDraw.init()
+    $('#btn1').onclick = () => {
+      canvasDraw.animateStart()
+    }
+    $('#btn2').onclick = () => {
+      canvasDraw.clear()
+    }
+    $('#btn3').onclick = () => {
+      canvasDraw.downloadImage()
+    }
+    $('#btn5').onclick = function () {
+      let files = $('#btn4').files
+      if (files.length > 0) {
+        canvasDraw.createImage(files[0])
+      } else {
+        alert('请先上传图片/视频文件')
+      }
+    }
+  </script>
+</body>
+
+</html>

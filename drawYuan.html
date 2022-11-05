@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="cvs"></canvas>
+    <span style="font-size: 14px" class="_name"></span>
+
+    <script>
+      class Draw {
+        constructor(el, width, height) {
+          this.el = el;
+          this.el.width = width;
+          this.el.height = height;
+
+          this.width = width;
+          this.height = height;
+
+          this.canvas = el.getContext("2d");
+
+          //  初始化传进来的文字
+          this.str = "";
+
+          //  初始化文字点的数据数组
+          this.colors = [];
+          this.flag = true;
+          this.useIndex = 0;
+          this.time = 0;
+        }
+        init() {
+          const { canvas: c, width: w, height: h } = this;
+          // c.beginPath()
+          c.fillRect(0, 0, w, h);
+          const bgColors = Array.from(new Array(400)).map((item) => {
+            let speed = Math.random();
+            return {
+              x: Math.random() * w,
+              y: Math.random() * h,
+              r: Math.random() + 1,
+              speed,
+            };
+          });
+
+          const loop = () => {
+            c.fillStyle = "#000";
+            c.fillRect(0, 0, w, h);
+            // setTimeout(() => {
+            this.sendText();
+            // }, 500);
+            bgColors.map((item) => {
+              c.beginPath();
+              c.arc(item.x, item.y, item.r, 0, Math.PI * 2);
+              c.closePath();
+              c.fillStyle = "#fff";
+              c.fill();
+              item.y += item.speed;
+              if (item.y >= h) {
+                item.y = 0;
+              }
+            });
+          };
+
+          setInterval(() => {
+            window.requestAnimationFrame(loop);
+          });
+        }
+        sendText(str) {
+          const { canvas: c, width: w, height: h } = this;
+
+          this.str = str ? str.split(",") : this.str;
+          // console.log(this.useIndex);
+          c.fillStyle = "#ffffff";
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          c.font = "100px sans-serif";
+          c.fillText(this.str[this.useIndex], w / 2, h / 2);
+
+          let data = c.getImageData(0, 0, w, h).data;
+          // console.log(data)
+          // console.log(1);
+          if (this.flag) {
+            // console.log(1);
+            const bl = 4;
+            const colors = [];
+            let index = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              let x = index % w;
+              let y = Math.ceil(index / w);
+              if (
+                x % bl === 0 &&
+                y % bl === 0 &&
+                data[i] === 255 &&
+                data[i + 1] === 255 &&
+                data[i + 2] === 255 &&
+                data[i + 3] === 255
+              ) {
+                const rx =
+                  this.colors[Math.floor(Math.random() * this.colors.length)]
+                    ?.x ||
+                  Math.random() * 100 * this.str[this.useIndex].length +
+                    w / 2 -
+                    (100 * this.str[this.useIndex].length) / 2;
+                const ry =
+                  this.colors[Math.floor(Math.random() * this.colors.length)]
+                    ?.y || Math.random() * 100 + h / 2 - 50;
+                const speedX = Math.abs(x - rx) / 200;
+                const speedY = Math.abs(y - ry) / 200;
+                // console.log(colors, "colors");
+                // console.log(Math.floor(Math.random() * this.colors.length));
+                // console.log(this.colors);
+                const obj = {
+                  x,
+                  y,
+                  rx,
+                  ry,
+                  speedX,
+                  speedY,
+                };
+                colors[index] = obj;
+              }
+              index++;
+            }
+            //过滤没有纸的数据
+            this.colors = colors.filter((item) => item);
+            this.flag = false;
+            this.time = 0;
+          }
+
+          const loop = () => {
+            c.fillStyle = "#000";
+            c.fillRect(0, 0, w, h);
+            // console.log(this.colors);
+            this.colors.map((item) => {
+              c.beginPath();
+              c.fillStyle = "#fff";
+              // console.log(item);
+              if (item.rx >= item.x) {
+                item.rx -= item.speedX;
+                if (item.rx <= item.x) {
+                  item.rx = item.x;
+                }
+              } else if (item.rx <= item.x) {
+                item.rx += item.speedX;
+                if (item.rx >= item.x) {
+                  item.rx = item.x;
+                }
+              }
+              if (item.ry >= item.y) {
+                item.ry -= item.speedY;
+                if (item.ry <= item.y) {
+                  item.ry = item.y;
+                }
+              } else if (item.ry <= item.y) {
+                item.ry += item.speedY;
+                if (item.ry >= item.y) {
+                  item.ry = item.y;
+                }
+              }
+              c.arc(item.rx, item.ry, 2, 0, Math.PI * 2);
+              // console.log(item.x, item.y);
+              c.closePath();
+              c.fill();
+            });
+            const flag = this.colors.every(
+              (item) => item.x === item.rx && item.y === item.ry
+            );
+
+            if (flag) {
+              this.time++;
+              if (this.time > 100) {
+                this.flag = flag;
+                this.useIndex++;
+                if (this.useIndex >= this.str.length) {
+                  this.useIndex = 0;
+                }
+              }
+              // console.log(this.colors);
+              // setTimeout(() => {
+
+              // }, 500);
+              // this.colors = this.colors.sort((a, b) => a.x - b.y);
+              // console.log(this);
+            }
+          };
+
+          loop();
+          // setTimeout(() => {
+          // }, 50);
+          // console.log(colors, "colors");
+        }
+      }
+
+      const { clientWidth: width, clientHeight: height } =
+        document.documentElement;
+      // console.log(document);
+      const cvs = document.querySelector("#cvs");
+      let dd = new Draw(cvs, width, height);
+      dd.init();
+      dd.sendText(
+        "本是后山人,偶做前堂客,醉舞经阁半卷书,坐井说天阔,大志戏功名,海斗量福祸,论到囊中羞涩时,怒指乾坤错"
+      );
+
+      // document.onresize = () => {
+      //   const { clientWidth: width, clientHeight: height } =
+      //     document.documentElement;
+      //   console.log(width, height);
+      //   dd = new Draw(cvs, width, height);
+      //   dd.init();
+      //   dd.sendText(
+      //     "本是后山人,偶做前堂客,醉舞经阁半卷书,坐井说天阔,大志戏功名,海斗量福祸,论到囊中羞涩时,怒指乾坤错"
+      //   );
+      // };
+
+      // const _name = document.querySelector("._name");
+      // console.log(_name.clientWidth);
+    </script>
+  </body>
+</html>

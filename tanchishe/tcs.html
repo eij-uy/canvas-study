@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <style>
+    #myCanvas {
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="myCanvas"></canvas>
+  <script>
+    const $ = (str) => {
+      return document.querySelector(str)
+    }
+
+    class Draw {
+      constructor(el, width, height) {
+        this.el = el
+        this.el.width = width
+        this.el.height = height
+
+        this.width = width
+        this.height = height
+        this.x = Math.floor(Math.random() * width + 1)
+        this.y = Math.floor(Math.random() * height + 1)
+        this.canvas = this.el.getContext('2d')
+        this.timer = null
+        this.animteArr = [{ x: this.x, y: this.y }]
+      }
+      init () {
+        // console.log(this.el)
+        let drawFlg = false
+        this.canvas.lineWidth = this.lineWidth
+        this.canvas.beginPath()
+        this.canvas.moveTo(this.x, this.y)
+        this.canvas.lineTo(this.x, this.y + 5)
+        this.canvas.stroke()
+
+
+
+        document.onkeydown = (e) => {
+          // console.log(e)
+          switch (e.keyCode) {
+            case 38:
+              console.log('上')
+              // console.log(e)
+              // this.canvas.moveTo(this.x, this.y)
+              clearInterval(this.timer)
+              this.timer = setInterval(() => {
+                // console.log(this.x, this.y)
+                let x = this.x
+                let y = this.y -= 1
+                let newX = this.animteArr[this.animteArr.length - 1].x
+                let newY = this.animteArr[this.animteArr.length - 1].y
+                this.canvas.beginPath()
+                this.canvas.moveTo(newX, newY)
+                this.canvas.lineTo(x, y)
+                this.animteArr.push({ x, y })
+                this.canvas.stroke()
+                setTimeout(() => {
+                  this.canvas.clear(0, 0)
+                })
+              }, 100)
+              break
+            case 37:
+              console.log('左')
+              clearInterval(this.timer)
+              this.timer = setInterval(() => {
+                this.canvas.lineTo(this.x--, this.y)
+                this.canvas.stroke()
+              }, 10)
+              break
+            case 40:
+              console.log('下')
+              clearInterval(this.timer)
+              this.timer = setInterval(() => {
+                this.canvas.lineTo(this.x, this.y++)
+                this.canvas.stroke()
+              }, 10)
+              break
+            case 39:
+              console.log('右')
+              clearInterval(this.timer)
+              this.timer = setInterval(() => {
+                this.canvas.lineTo(this.x++, this.y)
+                this.canvas.stroke()
+              }, 10)
+              break
+          }
+        }
+      }
+    }
+
+    const drawCanvas = new Draw($('#myCanvas'), 600, 600)
+    drawCanvas.init()
+  </script>
+</body>
+
+</html>

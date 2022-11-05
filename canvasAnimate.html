@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="cvs"></canvas>
+  <script type="module">
+    import { Draw, $ } from './Draw.js'
+    class DrawAnimte extends Draw {
+      constructor(el, width, height) {
+        super(el, width, height)
+      }
+      init () {
+        // console.log(this, 'this')
+        const { canvas: c, width: w, height: h } = this
+        c.fillRect(0, 0, w, h)
+        c.stroke()
+      }
+    }
+    const _canvas = new DrawAnimte($('#cvs'))
+    _canvas.init()
+  </script>
+</body>
+
+</html>

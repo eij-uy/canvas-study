@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="myCanvas"></canvas>
+  <script>
+
+    const $ = (str) => {
+      return document.querySelector(str)
+    }
+
+    class Draw {
+      constructor(el, width, height, text = '', bl = 4, speedV = 2) {
+        this.el = el
+        this.el.width = width
+        this.el.height = height
+
+        this.width = width
+        this.height = height
+
+        this.canvas = this.el.getContext('2d')
+        //背景数据
+        this.bgData = []
+        this.bgLength = 400
+        this.bgTimer = null
+        this.timerNum = 20
+        this.bgSize = 2
+        // 要显示的文字
+        this.text = text
+        // 比例
+        this.bl = bl
+        //当前帧的数据
+        this.data = []
+        this.speedV = speedV
+        this.nowIndex = 0
+        // 控制显示
+        this.flag = false
+        // 稀释后的数组
+        this.colors = []
+
+      }
+      init () {
+        const { el: e, canvas: c, width: w, height: h, timerNum, loop } = this
+
+        // c.beginPath()
+        let bgColors = Array.from(new Array(this.bgLength)).map(item => {
+          const x = Math.random() * w
+          const y = Math.random() * h
+          return {
+            x,
+            y,
+            r: this.bgSize,
+            bgSpeed: Math.random() * 2 + 1
+          }
+        })
+        this.loop(bgColors)
+        setInterval(() => {
+          this.flag = true
+        }, 3000)
+        // e.onmouseover = () => {
+        //   clearInterval(this.bgTimer)
+        // }
+
+        // e.onmouseout = () => {
+        //   this.bgTimer = setInterval(() => {
+        //     window.requestAnimationFrame(loop.bind(this))
+        //   }, timerNum)
+        // }
+
+
+      }
+      sendText (text) {
+        this.text = text
+        const { canvas: c, width: w, height: h, bl, speedV, nowIndex } = this
+        let index = 0
+        let useIndex = 0
+        c.font = '100px sans-serif'
+        c.fillStyle = '#ffffff'
+        c.textAlign = 'center'
+        c.textBaseline = 'middle'
+        if (typeof (text) == 'string') {
+
+          c.fillText(text, w / 2, h / 2)
+        } else {
+          c.fillText(text[nowIndex], w / 2, h / 2)
+          // console.log(this.nowIndex)
+          if (this.flag) {
+            this.nowIndex++
+            this.flag = false
+            if (this.nowIndex >= text.length) {
+              this.nowIndex = 0
+            }
+          }
+
+        }
+        //获取canvas当前帧
+        const data = c.getImageData(0, 0, w, h).data
+        this.data = data
+
+        // 遍历稀释当前帧数据
+        for (let i = 0; i < data.length; i += 4) {
+          let x = index % w
+          let y = Math.ceil(index / w)
+
+          if (x % bl === 0 &&
+            y % bl === 0 &&
+            data[i] == 255 &&
+            data[i + 1] == 255
+            && data[i + 2] == 255
+            && data[i + 3] == 255) {
+            // 打乱后的位置
+            const rx = Math.random() * w
+            const ry = Math.random() * h
+            // 每一个点的数据
+            const item = this.colors[useIndex]
+            if (item) {
+              this.colors[useIndex] = {
+                x,
+                y,
+                rx: item.x,
+                ry: item.y,
+                speedX: Math.abs(x - rx) * speedV,
+                speedY: Math.abs(y - ry) * speedV
+              }
+            } else {
+              this.colors[useIndex] = {
+                x,
+                y,
+                rx,
+                ry,
+                speedX: Math.abs(x - rx) * speedV,
+                speedY: Math.abs(y - ry) * speedV
+              }
+            }
+            useIndex++
+          }
+          index++
+        }
+        // 生成像素字
+        c.fillStyle = '#000'
+        c.fillRect(0, 0, w, h)
+        c.fillStyle = '#fff'
+        // setInterval(() => {
+        window.requestAnimationFrame(loadAll)
+        // }, 100)
+
+        function loadAll () {
+          for (let i = 0; i < this.colors.length; i++) {
+            c.beginPath()
+            c.arc(this.colors[i].rx, this.colors[i].ry, 1, 0, Math.PI * 2)
+            c.closePath()
+            c.fill()
+            if (this.colors[i].rx > this.colors[i].x) {
+              this.colors[i].rx -= this.colors[i].speedX
+              if (this.colors[i].rx < this.colors[i].x) {
+                this.colors[i].rx = this.colors[i].x
+              }
+            } else if (this.colors[i].rx < this.colors[i].x) {
+              this.colors[i].rx += this.colors[i].speedX
+              if (this.colors[i].rx > this.colors[i].x) {
+                this.colors[i].rx = this.colors[i].x
+              }
+            }
+
+            if (this.colors[i].ry > this.colors[i].y) {
+              this.colors[i].ry -= this.colors[i].speedY
+              if (this.colors[i].ry < this.colors[i].y) {
+                this.colors[i].ry = this.colors[i].y
+              }
+            } else if (this.colors[i].ry < this.colors[i].y) {
+              this.colors[i].ry += this.colors[i].speedY
+              if (this.colors[i].ry > this.colors[i].y) {
+                this.colors[i].ry = this.colors[i].y
+              }
+            }
+
+          }
+        }
+        // console.log(colors, 'colors')
+      }
+      loop (bgColors) {
+        const { canvas: c, width: w, height: h, timerNum } = this
+
+        setInterval(() => {
+          window.requestAnimationFrame(load)
+        }, timerNum)
+
+        const load = () => {
+          c.fillStyle = '#000'
+          c.fillRect(0, 0, w, h)
+          this.sendText(this.text)
+          c.fillStyle = '#ffffff'
+
+
+          bgColors.map(item => {
+            c.beginPath()
+            c.arc(item.x, item.y, item.r, 0, Math.PI * 2)
+            c.closePath()
+            c.fill()
+            item.y += item.bgSpeed
+            if (item.y > h) {
+              item.y = 0
+            }
+          })
+        }
+      }
+      resize (width, height) {
+        this.width = width
+        this.height = height
+        this.el.width = width
+        this.el.height = height
+      }
+    }
+
+
+    let { clientWidth: width, clientHeight: height } = document.documentElement
+    const myCanvas = new Draw($('#myCanvas'), width, height, ['你好', '我是', '111'])
+    myCanvas.init()
+
+    window.onresize = () => {
+      let { clientWidth: width, clientHeight: height } = document.documentElement
+      console.log(width, height)
+      myCanvas.resize(width, height)
+    }
+
+
+
+
+
+    /**
+     * 
+     * if (colors[i].rx > colors[i].x) {
+              colors[i].rx -= colors[i].speedX
+              if (colors[i].rx < colors[i].x) {
+                colors[i].rx = colors[i].x
+              }
+            } else if (colors[i].rx < colors[i].x) {
+              colors[i].rx += colors[i].speedX
+              if (colors[i].rx > colors[i].x) {
+                colors[i].rx = colors[i].x
+              }
+            }
+
+            if (colors[i].ry > colors[i].y) {
+              colors[i].ry -= colors[i].speedY
+              if (colors[i].ry < colors[i].y) {
+                colors[i].ry = colors[i].y
+              }
+            } else if (colors[i].ry < colors[i].y) {
+              colors[i].ry += colors[i].speedY
+              if (colors[i].ry > colors[i].y) {
+                colors[i].ry = colors[i].y
+              }
+            }
+     * 
+     * 
+     * 
+     * */
+  </script>
+</body>
+
+</html>
